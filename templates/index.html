@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>viviok messenger</title>
+    <style>
+        /* Пиксельный стиль и переменные тем */
+        :root {
+            --bg: #121212; --panel: #1e1e1e; --text: #ffffff; --accent: #ff6600;
+        }
+        [data-theme="light"] {
+            --bg: #f0f2f5; --panel: #ffffff; --text: #121212; --accent: #ff5500;
+        }
+        * { box-sizing: border-box; font-family: 'Courier New', Courier, monospace; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 0; transition: 0.3s; }
+        
+        /* Заставка */
+        #splash { position: fixed; inset: 0; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; text-align: center; }
+        #splash h1 { color: var(--accent); font-size: 2.5rem; letter-spacing: 2px; margin-bottom: 5px; }
+        #splash p { color: #555; font-size: 1rem; }
+
+        /* Окна */
+        .screen { display: none; max-width: 500px; margin: 50px auto; padding: 20px; background: var(--panel); border: 3px solid var(--accent); border-radius: 12px; }
+        .active { display: block; }
+
+        /* Элементы интерфейса */
+        input, button { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid var(--text); border-radius: 6px; background: transparent; color: var(--text); font-weight: bold; }
+        button { background: var(--accent); color: white; border: none; cursor: pointer; }
+        button:hover { opacity: 0.9; }
+        
+        .theme-toggle { position: absolute; top: 15px; right: 15px; width: auto; background: var(--panel); border: 1px solid var(--accent); color: var(--text); padding: 5px 10px; }
+        
+        /* Чат */
+        #chat-box { height: 400px; overflow-y: auto; border: 2px solid #444; padding: 10px; background: rgba(0,0,0,0.1); margin-bottom: 10px; border-radius: 8px; }
+        .msg { display: flex; align-items: center; margin: 10px 0; animation: fadeIn 0.3s; }
+        .msg img.av { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; border: 2px solid var(--accent); object-fit: cover; }
+        .msg-body { background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; max-width: 80%; }
+        [data-theme="light"] .msg-body { background: rgba(0,0,0,0.05); }
+        .msg-user { font-size: 0.8rem; color: var(--accent); margin-bottom: 3px; }
+        .sticker-img { max-width: 120px; display: block; border-radius: 4px; }
+
+        /* Кастомные стикеры */
+        .sticker-panel { margin: 10px 0; border-top: 1px dashed var(--accent); padding-top: 10px; }
+        .sticker-list { display: flex; gap: 10px; overflow-x: auto; padding: 5px 0; }
+        .st-thumb { width: 50px; height: 50px; object-fit: cover; border: 1px solid var(--text); cursor: pointer; border-radius: 4px; }
+        
+        /* Скрытый выбор файла */
+        .file-label { display: block; text-align: center; padding: 10px; border: 2px dashed var(--accent); cursor: pointer; margin: 10px 0; border-radius: 6px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <button class="theme-toggle" onclick="toggleTheme()">🌓 Тема</button>
+
+    <div id="splash">
+        <h1>DEVELOPER: ВИВИOK</h1>
+        <p>загрузка мессенджера...</p>
+    </div>
+
+    <div id="reg-screen" class="screen">
+        <h2 style="color: var(--accent); text-align: center;">ВХОД В ЧАТ</h2>
+        
+        <label class="file-label">
+            📸 Выбрать аватарку из галереи
+            <input type="file" id="avatar-input" accept="image/*" style="display:none;" onchange="previewAvatar(this)">
+        </label>
+        <img id="avatar-preview" style="width:70px; height:70px; border-radius:50%; display:none; margin:10px auto; object-fit:cover; border:2px solid var(--accent);">
+
+        <input type="text" id="username-input" placeholder="Введи уникальный юзернейм...">
+        <button onclick="tryRegister()">Войти</button>
+    </div>
+
+    <div id="chat-screen" class="screen">
+        <h3 style="margin: 0 0 10px 0;">viviok chat (<span id="my-name" style="color:var(--accent);"></span>)</h3>
+        <div id="chat-box"></div>
+        
+        <div style="display: flex; gap: 5px;">
+            <input type="text" id="msg-input" placeholder="Сообщение...">
+            <button onclick="sendMsg()" style="width: auto; padding: 0 20px;">➔</button>
+        </div>
+
+        <div class="sticker-panel">
+            <span style="font-size:0.8rem;">✨ Мои кастомные стикеры:</span>
+            <div class="sticker-list" id="stickers-container"></div>
+            <label class="file-label" style="padding: 5px; margin: 5px 0; font-size: 0.8rem;">
+                ➕ Добавить картинку как стикер
+                <input type="file" accept="image/*" style="display:none;" onchange="addCustomSticker(this)">
+            </label>
+        </div>
+    </div>
+
+    <script>
+        let myUsername = localStorage.getItem('vivi_user') || '';
+        let myAvatar = localStorage.getItem('vivi_avatar') || '';
+        let customStickers = JSON.parse(localStorage.getItem('vivi_stickers')) || [];
+
+        // Показ заставки
+        setTimeout(() => {
+            document.getElementById('splash').style.display = 'none';
+            if (myUsername) {
+                // Если заходили раньше — сразу в чат
+                showScreen('chat-screen');
+                document.getElementById('my-name').innerText = myUsername;
+                startChat();
+            } else {
+                showScreen('reg-screen');
+            }
+        }, 2200);
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // Обработка аватарки
+        function previewAvatar(input) {
+            if (input.files && input.files[0]) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    myAvatar = e.target.result;
+                    let img = document.getElementById('avatar-preview');
+                    img.src = myAvatar;
+                    img.style.display = 'block';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Регистрация на сервере
+        async function tryRegister() {
+            let user = document.getElementById('username-input').value.trim();
+            if(!user) return alert("Введите имя!");
+
+            let res = await fetch('/register', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username: user })
+            });
+            let data = await res.json();
+
+            if (res.status === 200) {
+                myUsername = user;
+                localStorage.setItem('vivi_user', user);
+                localStorage.setItem('vivi_avatar', myAvatar);
+                document.getElementById('my-name').innerText = user;
+                showScreen('chat-screen');
+                startChat();
+            } else {
+                alert(data.message); // Выдаст ошибку, если ник занят
+            }
+        }
+
+        // Переключение тем
+        function toggleTheme() {
+            let current = document.body.getAttribute('data-theme');
+            let next = current === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', next);
+            localStorage.setItem('vivi_theme', next);
+        }
+        if(localStorage.getItem('vivi_theme')) {
+            document.body.setAttribute('data-theme', localStorage.getItem('vivi_theme'));
+        }
+
+        // Добавление кастомного стикера
+        function addCustomSticker(input) {
+            if (input.files && input.files[0]) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    customStickers.push(e.target.result);
+                    localStorage.setItem('vivi_stickers', JSON.stringify(customStickers));
+                    renderStickers();
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function renderStickers() {
+            let container = document.getElementById('stickers-container');
+            container.innerHTML = '';
+            customStickers.forEach(st => {
+                let img = document.createElement('img');
+                img.src = st;
+                img.className = 'st-thumb';
+                img.onclick = () => sendSticker(st);
+                container.appendChild(img);
+            });
+        }
+
+        // Отправка сообщений и стикеров
+        async function sendMsg() {
+            let text = document.getElementById('msg-input').value.trim();
+            if(!text) return;
+            document.getElementById('msg-input').value = '';
+            await fetch('/send_message', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username: myUsername, text: text, avatar: myAvatar, is_sticker: false })
+            });
+            loadMessages();
+        }
+
+        async function sendSticker(stickerBase64) {
+            await fetch('/send_message', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username: myUsername, text: stickerBase64, avatar: myAvatar, is_sticker: true })
+            });
+            loadMessages();
+        }
+
+        // Обновление сообщений каждые 2 секунды
+        async function loadMessages() {
+            let res = await fetch('/get_messages');
+            let messages = await res.json();
+            let box = document.getElementById('chat-box');
+            let shouldScroll = box.scrollTop + box.clientHeight >= box.scrollHeight - 50;
+            
+            box.innerHTML = '';
+            messages.forEach(m => {
+                let avSrc = m.avatar || 'https://www.w3schools.com/howto/img_avatar.png';
+                let content = m.is_sticker ? `<img src="${m.text}" class="sticker-img">` : `<div>${m.text}</div>`;
+                
+                box.innerHTML += `
+                    <div class="msg">
+                        <img src="${avSrc}" class="av">
+                        <div class="msg-body">
+                            <div class="msg-user">${m.username}</div>
+                            ${content}
+                        </div>
+                    </div>
+                `;
+            });
+            if(shouldScroll) box.scrollTop = box.scrollHeight;
+        }
+
+        function startChat() {
+            renderStickers();
+            loadMessages();
+            setInterval(loadMessages, 2000);
+        }
+    </script>
+</body>
+</html>
