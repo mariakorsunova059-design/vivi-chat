@@ -82,12 +82,18 @@
         .input-panel { background: var(--panel); padding: 10px 10px calc(12px + env(safe-area-inset-bottom, 0px)) 10px; border-top: 1px solid rgba(255,255,255,0.05); z-index: 20; flex-shrink: 0; }
         .input-row { display: flex; gap: 6px; align-items: center; width: 100%; }
         
-        /* Шторка стикеров теперь без дёрганой анимации */
-        .sticker-drawer { position: absolute; bottom: -280px; left: 0; width: 100%; height: 240px; background: var(--panel); border-top: 1px solid rgba(255,255,255,0.08); z-index: 19; display: none; flex-direction: column; padding: 10px; }
-        .sticker-drawer.open { display: flex; bottom: 100%; }
+        /* Шторка стикеров теперь открывается абсолютно статично */
+        .sticker-drawer { position: absolute; bottom: 100%; left: 0; width: 100%; height: 240px; background: var(--panel); border-top: 1px solid rgba(255,255,255,0.08); z-index: 19; display: none; flex-direction: column; padding: 10px; }
+        .sticker-drawer.open { display: flex; }
         .sticker-drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .sticker-grid { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; overflow-y: auto; align-content: start; }
         .st-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; cursor: pointer; }
+
+        /* Убираем крестик очистки в инпутах типа search на мобилках */
+        input[type="search"]::-webkit-search-decoration,
+        input[type="search"]::-webkit-search-cancel-button,
+        input[type="search"]::-webkit-search-results-button,
+        input[type="search"]::-webkit-search-results-decoration { display: none; }
 
         /* Видео */
         #video-container { width: 100%; height: 180px; background: #000; display: none; position: relative; border-bottom: 2px solid var(--accent); flex-shrink: 0; }
@@ -101,7 +107,7 @@
 
     <div id="splash">
         <h1>DEVELOPER: ВИВИOK</h1>
-        <p style="color:#666; font-size:0.9rem; font-family: monospace;">mobile core v2.7 загрузка...</p>
+        <p style="color:#666; font-size:0.9rem; font-family: monospace;">mobile core v2.8 загрузка...</p>
     </div>
 
     <div id="reg-screen" class="screen" style="justify-content: center; padding: 20px;">
@@ -113,7 +119,7 @@
         </label>
         <img id="avatar-preview" style="width:80px; height:80px; border-radius:50%; display:none; margin:10px auto 20px auto; object-fit:cover;">
         
-        <input type="text" id="username-input" autocomplete="one-time-code" placeholder="Придумай свой ник...">
+        <input type="search" id="username-input" autocomplete="off" placeholder="Придумай свой ник...">
         <button onclick="tryRegister()" style="margin-top:15px; padding:14px; font-size:1rem;">Создать аккаунт</button>
     </div>
 
@@ -123,7 +129,7 @@
             <button class="icon-btn" onclick="openSettings()">⚙️</button>
         </div>
         <div style="padding: 10px; display: flex; gap: 6px; background: var(--panel);">
-            <input type="text" id="search-input" autocomplete="one-time-code" style="flex:1; padding:10px;" placeholder="Введи точный ник друга...">
+            <input type="search" id="search-input" autocomplete="off" style="flex:1; padding:10px;" placeholder="Введи точный ник друга...">
             <button onclick="searchContact()" style="padding:10px 15px;">Найти</button>
         </div>
         <div class="chats-list" id="chats-list-container"></div>
@@ -189,13 +195,13 @@
                 <div class="sticker-grid" id="stickers-grid-container"></div>
             </div>
 
-            <div class="input-panel">
+            <form class="input-panel" id="msg-form" onsubmit="handleFormSubmit(event)">
                 <div class="input-row">
                     <button type="button" onclick="toggleStickers()" style="background:transparent; font-size:1.3rem; padding:4px; color: var(--text); opacity:0.6;">😊</button>
-                    <input type="text" id="msg-input" autocomplete="one-time-code" autocorrect="off" autocapitalize="none" spellcheck="false" style="flex:1; padding:10px;" placeholder="Сообщение..." onclick="toggleStickers(false)">
-                    <button type="button" onmousedown="event.preventDefault(); sendMsg();" style="padding:10px 15px;">➔</button>
+                    <input type="search" id="msg-input" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="flex:1; padding:10px;" placeholder="Сообщение..." onclick="toggleStickers(false)">
+                    <button type="submit" style="padding:10px 15px;">➔</button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -459,13 +465,16 @@
             if(box) box.scrollTop = box.scrollHeight;
         }
 
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            sendMsg();
+        }
+
         async function sendMsg() {
             let textEl = document.getElementById('msg-input');
             let text = textEl.value.trim();
             if(!text || !currentChatUser) return;
             textEl.value = '';
-            // Возвращаем фокус на поле ввода, чтобы клавиатура гарантированно осталась открытой
-            textEl.focus(); 
             await fetch('/send_private_message', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -488,10 +497,11 @@
         function toggleStickers(forceState) {
             let drawer = document.getElementById('sticker-drawer');
             if (forceState !== undefined) {
-                if (forceState) drawer.classList.add('open');
-                else drawer.classList.remove('open');
+                if (forceState) drawer.style.display = 'flex';
+                else drawer.style.display = 'none';
             } else {
-                drawer.classList.toggle('open');
+                if (drawer.style.display === 'flex') drawer.style.display = 'none';
+                else drawer.style.display = 'flex';
             }
         }
 
@@ -540,7 +550,7 @@
             if(!container) return; container.innerHTML = '';
             customStickers.forEach(st => {
                 let img = document.createElement('img'); img.src = st; img.className = 'st-thumb';
-                img.onmousedown = (e) => { e.preventDefault(); sendSticker(st); };
+                img.onclick = () => sendSticker(st);
                 container.appendChild(img);
             });
         }
