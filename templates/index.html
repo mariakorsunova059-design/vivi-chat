@@ -24,14 +24,13 @@
         
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
         
-        /* Избегаем жесткого 100vh, управляем высотой через JS динамически */
         html, body { background: var(--bg); color: var(--text); margin: 0; padding: 0; transition: 0.3s; overflow: hidden; width: 100vw; height: 100%; position: fixed; left: 0; top: 0; }
         
         /* Заставка */
         #splash { position: fixed; inset: 0; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; text-align: center; }
         #splash h1 { color: var(--accent); font-size: 2.2rem; font-family: 'Courier New', monospace; letter-spacing: 2px; margin: 0 0 10px 0; }
 
-        /* Полноэкранные блоки с динамической высотой */
+        /* Полноэкранные блоки */
         .screen { display: none; position: absolute; left: 0; top: 0; width: 100vw; background: var(--bg); flex-direction: column; overflow: hidden; }
         .screen.active { display: flex; }
 
@@ -53,7 +52,7 @@
         .chat-item { display: flex; align-items: center; padding: 12px; background: var(--panel); border-radius: 12px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.02); cursor: pointer; }
         .chat-item img { width: 45px; height: 45px; border-radius: 50%; margin-right: 12px; object-fit: cover; }
 
-        /* Настройки ТГ-стайл */
+        /* Настройки */
         .settings-profile { display: flex; flex-direction: column; align-items: center; padding: 25px 10px; background: var(--panel); border-bottom: 1px solid rgba(255,255,255,0.05); }
         .settings-avatar { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; }
         .settings-name { font-size: 1.3rem; font-weight: bold; margin-bottom: 4px; }
@@ -65,7 +64,7 @@
         .chat-main { flex: 1; display: flex; flex-direction: column; background: var(--chat-bg); position: relative; overflow: hidden; }
         #chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; }
         
-        /* Сообщения и аватарки */
+        /* Сообщения */
         .msg { display: flex; align-items: flex-end; margin: 6px 0; max-width: 85%; }
         .msg.my-msg { align-self: flex-end; flex-direction: row; }
         .msg:not(.my-msg) { align-self: start; }
@@ -79,13 +78,13 @@
         
         .sticker-img { max-width: 140px; height: auto; display: block; border-radius: 0; }
 
-        /* ЖЕСТКИЙ ФИКС ДЛЯ КНОПОК ТЕЛЕФОНА: padding-bottom учитывает экранные кнопки */
+        /* Панель ввода */
         .input-panel { background: var(--panel); padding: 10px 10px calc(12px + env(safe-area-inset-bottom, 0px)) 10px; border-top: 1px solid rgba(255,255,255,0.05); z-index: 20; flex-shrink: 0; }
         .input-row { display: flex; gap: 6px; align-items: center; width: 100%; }
         
-        /* Шторка стикеров: выезжает ровно над поднятой панелью ввода */
-        .sticker-drawer { position: absolute; bottom: -280px; left: 0; width: 100%; height: 240px; background: var(--panel); border-top: 1px solid rgba(255,255,255,0.08); transition: bottom 0.25s ease; z-index: 19; display: flex; flex-direction: column; padding: 10px; }
-        .sticker-drawer.open { bottom: 100%; } /* Автоматически встает над input-panel */
+        /* ФИКС СТИКЕРОВ: Убрали плавную анимацию движения (transition: none), теперь открывается статично */
+        .sticker-drawer { position: absolute; bottom: -280px; left: 0; width: 100%; height: 240px; background: var(--panel); border-top: 1px solid rgba(255,255,255,0.08); transition: none; z-index: 19; display: flex; flex-direction: column; padding: 10px; }
+        .sticker-drawer.open { bottom: 100%; }
         .sticker-drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .sticker-grid { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; overflow-y: auto; align-content: start; }
         .st-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; cursor: pointer; }
@@ -102,7 +101,7 @@
 
     <div id="splash">
         <h1>DEVELOPER: ВИВИOK</h1>
-        <p style="color:#666; font-size:0.9rem; font-family: monospace;">mobile core v2.5 загрузка...</p>
+        <p style="color:#666; font-size:0.9rem; font-family: monospace;">mobile core v2.6 загрузка...</p>
     </div>
 
     <div id="reg-screen" class="screen" style="justify-content: center; padding: 20px;">
@@ -114,7 +113,7 @@
         </label>
         <img id="avatar-preview" style="width:80px; height:80px; border-radius:50%; display:none; margin:10px auto 20px auto; object-fit:cover;">
         
-        <input type="text" id="username-input" placeholder="Придумай свой ник...">
+        <input type="text" id="username-input" autocomplete="off" placeholder="Придумай свой ник...">
         <button onclick="tryRegister()" style="margin-top:15px; padding:14px; font-size:1rem;">Создать аккаунт</button>
     </div>
 
@@ -124,7 +123,7 @@
             <button class="icon-btn" onclick="openSettings()">⚙️</button>
         </div>
         <div style="padding: 10px; display: flex; gap: 6px; background: var(--panel);">
-            <input type="text" id="search-input" style="flex:1; padding:10px;" placeholder="Введи точный ник друга...">
+            <input type="text" id="search-input" autocomplete="off" style="flex:1; padding:10px;" placeholder="Введи точный ник друга...">
             <button onclick="searchContact()" style="padding:10px 15px;">Найти</button>
         </div>
         <div class="chats-list" id="chats-list-container"></div>
@@ -192,9 +191,9 @@
 
             <div class="input-panel">
                 <div class="input-row">
-                    <button onclick="toggleStickers()" style="background:transparent; font-size:1.3rem; padding:4px; color: var(--text); opacity:0.6;">😊</button>
-                    <input type="text" id="msg-input" style="flex:1; padding:10px;" placeholder="Сообщение..." onclick="toggleStickers(false)">
-                    <button onclick="sendMsg()" style="padding:10px 15px;">➔</button>
+                    <button type="button" onmousedown="event.preventDefault(); toggleStickers();" style="background:transparent; font-size:1.3rem; padding:4px; color: var(--text); opacity:0.6;">😊</button>
+                    <input type="text" id="msg-input" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="flex:1; padding:10px;" placeholder="Сообщение..." onclick="toggleStickers(false)">
+                    <button onmousedown="event.preventDefault(); sendMsg();" style="padding:10px 15px;">➔</button>
                 </div>
             </div>
         </div>
@@ -213,7 +212,6 @@
         let lastMessagesCount = 0;
         let currentVideoUrl = '';
 
-        // ДИНАМИЧЕСКИЙ РАСЧЕТ ВЫСОТЫ ПОД ЛЮБОЙ ЭКРАН ТЕЛЕФОНА
         function resizeApp() {
             let h = window.innerHeight;
             document.querySelectorAll('.screen').forEach(s => s.style.height = h + 'px');
@@ -462,9 +460,10 @@
         }
 
         async function sendMsg() {
-            let text = document.getElementById('msg-input').value.trim();
+            let textEl = document.getElementById('msg-input');
+            let text = textEl.value.trim();
             if(!text || !currentChatUser) return;
-            document.getElementById('msg-input').value = '';
+            textEl.value = '';
             await fetch('/send_private_message', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -539,7 +538,9 @@
             if(!container) return; container.innerHTML = '';
             customStickers.forEach(st => {
                 let img = document.createElement('img'); img.src = st; img.className = 'st-thumb';
-                img.onclick = () => sendSticker(st); container.appendChild(img);
+                // Отправка стикера тоже не сбивает клавиатуру
+                img.onmousedown = (e) => { e.preventDefault(); sendSticker(st); };
+                container.appendChild(img);
             });
         }
 
