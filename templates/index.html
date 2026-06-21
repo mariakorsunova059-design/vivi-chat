@@ -82,9 +82,9 @@
         .input-panel { background: var(--panel); padding: 10px 10px calc(12px + env(safe-area-inset-bottom, 0px)) 10px; border-top: 1px solid rgba(255,255,255,0.05); z-index: 20; flex-shrink: 0; }
         .input-row { display: flex; gap: 6px; align-items: center; width: 100%; }
         
-        /* Шторка стикеров */
-        .sticker-drawer { position: absolute; bottom: -280px; left: 0; width: 100%; height: 240px; background: var(--panel); border-top: 1px solid rgba(255,255,255,0.08); z-index: 19; display: flex; flex-direction: column; padding: 10px; transition: bottom 0.2s ease-out; }
-        .sticker-drawer.open { bottom: 100%; }
+        /* Шторка стикеров теперь выезжает стабильно через transform */
+        .sticker-drawer { position: absolute; bottom: -250px; left: 0; width: 100%; height: 240px; background: var(--panel); border-top: 1px solid rgba(255,255,255,0.08); z-index: 19; display: flex; flex-direction: column; padding: 10px; transition: transform 0.2s ease-out; }
+        .sticker-drawer.open { transform: translateY(-250px); }
         .sticker-drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .sticker-grid { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; overflow-y: auto; align-content: start; }
         .st-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; cursor: pointer; }
@@ -106,7 +106,7 @@
 <body>
 
     <div id="splash">
-        <h1>DEVELOPER:  ВИВИOK</h1>
+        <h1>DEVELOPER: ВИВИOK</h1>
         <p style="color:#666; font-size:0.9rem; font-family: monospace;">mobile core v3.0 загрузка...</p>
     </div>
 
@@ -471,7 +471,6 @@
             if(!text || !currentChatUser) return;
             textEl.value = '';
             
-            // Принудительно возвращаем фокус полю ввода
             setTimeout(() => { textEl.focus(); }, 10);
             
             await fetch('/send_private_message', {
